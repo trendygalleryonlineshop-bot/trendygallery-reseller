@@ -25,6 +25,13 @@ input,textarea,select{width:100%;padding:12px;margin-bottom:10px;border:1px soli
 .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .prod{display:flex;gap:12px}
 .prod img,.ph{width:80px;height:80px;border-radius:12px;object-fit:cover;background:#eef1f6;display:grid;place-items:center;font-size:30px;flex:none}
+.pc .pr{display:flex;gap:12px}
+.pc img,.pc .ph{width:120px;height:120px;border-radius:12px;object-fit:cover;background:#eef1f6;display:grid;place-items:center;font-size:40px;flex:none;cursor:zoom-in}
+.pi{flex:1;min-width:0}
+.pd{font-size:13px;color:#4b5563;margin-top:6px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line;cursor:pointer}
+.pd.open{display:block;-webkit-line-clamp:unset}
+.zm{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:20;display:flex;align-items:center;justify-content:center;padding:12px}
+.zm img{max-width:100%;max-height:100%;border-radius:12px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}.grid2 .card{margin:0;text-align:center}
 .warn{background:#fff7e0;color:#92400e}
 #t{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 18px;border-radius:99px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9;max-width:90%;text-align:center}
@@ -56,6 +63,7 @@ const val=id=>{const e=document.getElementById(id);return e?e.value.trim():""};
 const needV=()=>{if(!S.me.verified){toast("ভেরিফাই হওয়ার পর এটি করতে পারবেন");return true}return false};
 function render(){const y=scrollY;const a=$("#app");
  a.innerHTML=!S.me?authV():S.me.role==="admin"?adminV():resV();scrollTo(0,y)}
+function zoom(u){const d=document.createElement("div");d.className="zm";d.onclick=()=>d.remove();d.innerHTML=`<img src="${esc(u)}" alt="">`;document.body.appendChild(d)}
 function setMode(m){S.mode=m;render()}
 function setTab(t){S.tab=t;render();scrollTo(0,0)}
 
@@ -96,14 +104,14 @@ const pz=p=>Math.max(S.d.rp[p.id]!=null?S.d.rp[p.id]:p.reseller_price,p.admin_pr
 function plist(){const q=S.q.toLowerCase(),v=S.me.verified;
  const l=S.d.products.filter(p=>(p.name+(p.category||"")).toLowerCase().includes(q));
  if(!l.length)return `<p class="c m">কোনো পণ্য নেই</p>`;
- return l.map(p=>`<div class="card prod">${p.image_url?`<img src="${esc(p.image_url)}" alt="">`:'<div class="ph">🛍️</div>'}
- <div style="flex:1"><b>${esc(p.name)}</b>${v?`<div class="m" style="font-size:13px">কিনবেন (এডমিন প্রাইস) ${tk(p.admin_price)}</div>
- <label>আমার বিক্রয় মূল্য ৳</label><div style="display:flex;gap:6px"><input id="sp${p.id}" type="number" value="${pz(p)}" style="margin:0"><button class="btn sm" onclick="savePrice(${p.id})">সেভ</button></div>
+ return l.map(p=>`<div class="card pc"><div class="pr">${p.image_url?`<img src="${esc(p.image_url)}" alt="" onclick="zoom(this.src)">`:'<div class="ph">🛍️</div>'}
+ <div class="pi"><b>${esc(p.name)}</b>${v?`<div class="b" style="font-size:14px;margin-top:2px">পাইকারি মূল্য ${tk(p.admin_price)}</div>`:""}${p.description?`<div class="pd" onclick="this.classList.toggle('open')">${esc(p.description)}</div>`:""}</div></div>
+ ${v?`<label style="display:block;margin-top:10px">আমার বিক্রয় মূল্য ৳</label><div style="display:flex;gap:6px"><input id="sp${p.id}" type="number" value="${pz(p)}" style="margin:0"><button class="btn sm" onclick="savePrice(${p.id})">সেভ</button></div>
  <div class="g b" style="font-size:13px;margin-top:4px">লাভ ${tk(pz(p)-p.admin_price)}</div>
  <div style="margin-top:8px;display:flex;gap:8px"><button class="btn sm" onclick="addCart(${p.id})">কার্টে যোগ</button><button class="btn2 sm" onclick="share(${p.id})">শেয়ার</button></div>`
- :`<div class="m" style="font-size:13px;margin-top:6px">🔒 পাইকারি রেট দেখতে ভেরিফাইড রিসেলার হতে হবে</div>`}</div></div>`).join("")}
+ :`<div class="m" style="font-size:13px;margin-top:8px">🔒 পাইকারি রেট দেখতে ভেরিফাইড রিসেলার হতে হবে</div>`}</div>`).join("")}
 async function savePrice(id){if(needV())return;const p=S.d.products.find(x=>x.id===id),v=+val("sp"+id);
- if(!(v>=p.admin_price))return toast("বিক্রয় মূল্য এডমিন প্রাইস ("+tk(p.admin_price)+") এর কম হতে পারবে না");
+ if(!(v>=p.admin_price))return toast("বিক্রয় মূল্য পাইকারি মূল্য ("+tk(p.admin_price)+") এর কম হতে পারবে না");
  const {error}=await sb.from("reseller_prices").upsert({reseller_id:S.me.id,product_id:id,price:v});
  if(error)return toast(error.message);S.d.rp[id]=v;toast("সেভ হয়েছে");render()}
 function addCart(id){if(needV())return;S.cart[id]=(S.cart[id]||0)+1;toast("কার্টে যোগ হয়েছে");render()}
@@ -146,23 +154,23 @@ async function resetPw(phone){const pw=prompt("নতুন পাসওয়�
  const {error}=await sb.rpc("admin_reset_password",{p_phone:phone,p_new:pw});toast(error?error.message:"পাসওয়ার্ড বদলানো হয়েছে, রিসেলারকে জানান")}
 /* ---------- admin ---------- */
 async function addProduct(){const n=val("np_n"),c=val("np_c"),a=+val("np_a"),r=+val("np_r"),f=$("#np_f").files[0];
- if(!n||!(a>0)||r<a)return toast("নাম ও সঠিক দাম দিন (রিসেলার প্রাইস ≥ এডমিন প্রাইস)");
+ if(!n||!(a>0)||r<a)return toast("নাম ও সঠিক দাম দিন (রিসেলার প্রাইস ≥ পাইকারি মূল্য)");
  let url=null;
  if(f){const path=Date.now()+"-"+f.name.replace(/[^\w.]/g,"_");const up=await sb.storage.from("products").upload(path,f);
   if(up.error)return toast(up.error.message);url=sb.storage.from("products").getPublicUrl(path).data.publicUrl}
- const {error}=await sb.from("products").insert({name:n,category:c||"ফ্যাশন",admin_price:a,reseller_price:r,image_url:url});
+ const {error}=await sb.from("products").insert({name:n,category:c||"ফ্যাশন",admin_price:a,reseller_price:r,image_url:url,description:val("np_d")});
  if(error)return toast(error.message);toast("পণ্য যোগ হয়েছে");await loadData();render()}
 async function saveP(id){const a=+val("ap"+id),r=+val("rp"+id);
- if(!(a>0)||r<a)return toast("রিসেলার প্রাইস এডমিন প্রাইসের কম হতে পারবে না");
- const {error}=await sb.from("products").update({admin_price:a,reseller_price:r}).eq("id",id);toast(error?error.message:"সেভ হয়েছে");await loadData();render()}
+ if(!(a>0)||r<a)return toast("রিসেলার প্রাইস পাইকারি মূল্যের কম হতে পারবে না");
+ const {error}=await sb.from("products").update({admin_price:a,reseller_price:r,description:val("dp"+id)}).eq("id",id);toast(error?error.message:"সেভ হয়েছে");await loadData();render()}
 async function togP(id,v){await sb.from("products").update({active:!v}).eq("id",id);await loadData();render()}
 async function delP(id){if(!confirm("ডিলিট করবেন?"))return;const {error}=await sb.from("products").delete().eq("id",id);if(error)toast('অর্ডারে ব্যবহৃত পণ্য ডিলিট না করে "বন্ধ" করুন');await loadData();render()}
 async function upd(t,id,patch){const {error}=await sb.from(t).update(patch).eq("id",id);if(error)toast(error.message);await loadData();render()}
 function adminV(){const d=S.d;let h="";
- if(S.tab==="products")h=`<div class="card"><b>নতুন পণ্য</b><input id="np_n" style="margin-top:8px" placeholder="নাম"><input id="np_c" placeholder="ক্যাটাগরি (যেমন: ফ্যাশন, গ্যাজেট)">
-  <div class="row" style="gap:8px"><input id="np_a" type="number" placeholder="এডমিন প্রাইস"><input id="np_r" type="number" placeholder="সাজেস্টেড বিক্রয় মূল্য"></div><input id="np_f" type="file" accept="image/*"><button class="btn w" onclick="addProduct()">পণ্য যোগ করুন</button></div>`+
+ if(S.tab==="products")h=`<div class="card"><b>নতুন পণ্য</b><input id="np_n" style="margin-top:8px" placeholder="নাম"><input id="np_c" placeholder="ক্যাটাগরি (যেমন: ফ্যাশন, গ্যাজেট)"><textarea id="np_d" rows="3" placeholder="পণ্যের বিবরণ (৩-৪ লাইন)"></textarea>
+  <div class="row" style="gap:8px"><input id="np_a" type="number" placeholder="পাইকারি মূল্য"><input id="np_r" type="number" placeholder="সাজেস্টেড বিক্রয় মূল্য"></div><input id="np_f" type="file" accept="image/*"><button class="btn w" onclick="addProduct()">পণ্য যোগ করুন</button></div>`+
   d.products.map(p=>`<div class="card" style="${p.active?"":"opacity:.6"}"><div class="prod" style="gap:10px">${p.image_url?`<img src="${esc(p.image_url)}" alt="" style="width:50px;height:50px">`:""}<div><b>${esc(p.name)}</b><div class="m" style="font-size:13px">${esc(p.category)}</div></div></div>
-  <div class="row" style="gap:8px;margin-top:10px"><div style="flex:1"><label>এডমিন প্রাইস ৳</label><input id="ap${p.id}" type="number" value="${p.admin_price}"></div><div style="flex:1"><label>সাজেস্টেড বিক্রয় মূল্য ৳</label><input id="rp${p.id}" type="number" value="${p.reseller_price}"></div></div>
+  <textarea id="dp${p.id}" rows="3" style="margin-top:10px" placeholder="পণ্যের বিবরণ">${esc(p.description||"")}</textarea><div class="row" style="gap:8px;margin-top:0"><div style="flex:1"><label>পাইকারি মূল্য ৳</label><input id="ap${p.id}" type="number" value="${p.admin_price}"></div><div style="flex:1"><label>সাজেস্টেড বিক্রয় মূল্য ৳</label><input id="rp${p.id}" type="number" value="${p.reseller_price}"></div></div>
   <div style="display:flex;gap:8px"><button class="btn" onclick="saveP(${p.id})">সেভ</button><button class="btn2" onclick="togP(${p.id},${p.active})">${p.active?"বন্ধ করুন":"চালু করুন"}</button><button class="btn2 red" onclick="delP(${p.id})">ডিলিট</button></div></div>`).join("");
  if(S.tab==="users")h=!d.users.length?`<p class="c m">এখনো কোনো রিসেলার নেই</p>`:d.users.map(u=>`<div class="card row"><div style="display:flex;gap:10px;align-items:center">${avh(u.avatar_url,u.name,44)}<div><b>${esc(u.name)}</b><div class="m" style="font-size:13px">${esc(u.phone)} · ${esc(u.code)}</div></div></div><div style="display:flex;flex-direction:column;gap:6px"><button class="${u.verified?"btn2":"btn"}" onclick="upd('profiles','${u.id}',{verified:${!u.verified}})">${u.verified?"ভেরিফাই বাতিল":"ভেরিফাই করুন"}</button><button class="btn2 sm" onclick="resetPw('${esc(u.phone)}')">পাসওয়ার্ড রিসেট</button></div></div>`).join("");
  const opt=(a,v)=>a.map(([k,l])=>`<option value="${k}" ${k===v?"selected":""}>${l}</option>`).join("");
